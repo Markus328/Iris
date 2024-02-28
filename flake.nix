@@ -3,37 +3,33 @@
     nixpkgs = {
       url = "github:nixos/nixpkgs/nixpkgs-unstable";
     };
-    flake-utils = {
-      url = "github:numtide/flake-utils";
-    };
   };
   outputs = {
     nixpkgs,
-    flake-utils,
+    self,
     ...
-  }:
-    flake-utils.lib.eachDefaultSystem (system: let
-      pkgs = import nixpkgs {
-        inherit system;
-      };
+  }: let
+    system = "x86_64-linux";
+    pkgs = import nixpkgs {
+      inherit system;
+    };
 
-      app = pkgs.writeShellScriptBin "run-app" ''python3 ./app.py'';
-      shell = {
-        packages = with pkgs; [
-          python3
-          app
+    python = pkgs.python3;
+    shell = import ./dev.nix {inherit pkgs python;};
 
-          #Coding helpers
-          nodejs
-          pyright
-          black
-          isort
-        ];
+    iris = import ./iris.nix {inherit pkgs python;};
+  in {
+    devShells.${system} = {
+      default = pkgs.mkShell shell;
+    };
+    packages.${system} = {
+      default = iris;
+    };
+    apps.${system} = {
+      default = {
+        type = "app";
+        program = "${self.packages.${system}.default}/bin/iris";
       };
-    in {
-      devShells = {
-        default = pkgs.mkShell shell;
-      };
-      defaultPackage = app;
-    });
+    };
+  };
 }

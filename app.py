@@ -1,16 +1,61 @@
+import argparse
 import csv
 import math
 import random
-import sys
 from time import time
+
+parser = argparse.ArgumentParser(
+    prog="iris",
+    description="Esse programa executa uma série de testes KNN para um dado Iris dataset.",
+)
+
+
+parser.add_argument(
+    "-n",
+    "--number-of-tests",
+    dest="number",
+    type=int,
+    help="Numero de testes para cada método KNN. O padrão é 100",
+)
+parser.add_argument(
+    "-s", "--single", dest="single", action="store_true", help="O mesmo que '-n 1'"
+)
+parser.add_argument(
+    "-f",
+    "--file",
+    dest="file",
+    default="./Iris.csv",
+    help="O caminho para o Iris dataset",
+)
+
+
+args = parser.parse_args()
+
+
+def parse_number_of_tests(args):
+    number = args.number
+    single = args.single
+
+    if number and single:
+        print("Ignorando argumento '--single'...")
+    elif not number and single:
+        number = 1
+    elif not number and not single:
+        number = 100
+
+    return number
+
+
+def parse_iris_file(args):
+    return args.file
+
 
 # define quantos testes de cada tipo realizar caso seja um valor maior
 # que um, omitir logs de erros e realizar um resumo de precisão e tempo de
 # execução médio de cada teste
-NUMERO_TESTES = int(sys.argv[1]) if len(sys.argv) > 1 else 100
+NUMERO_TESTES = parse_number_of_tests(args)
 
-# esteja certo que o caminho para esse arquivo existe
-IRIS_FILE = "Iris.csv"
+IRIS_FILE = parse_iris_file(args)
 
 
 # nome das classes (espécies)
@@ -40,7 +85,7 @@ def log(logs=True, texto="", *args):
         print(texto % args)
 
 
-# retorna a lista de flores da Iris dataset no diretório atual
+# retorna a lista de flores da Iris dataset
 def get_list():
     tlist = []
     try:
@@ -59,7 +104,7 @@ def get_list():
             if len(el) > 4:
                 tlist.append([float(e) for e in el[id_pos:-1]] + el[-1:])
     except:
-        print("Nenhum arquivo '%s' encontrado! Faça o upload :)" % (IRIS_FILE))
+        print("Nenhum arquivo '%s' encontrado!" % (IRIS_FILE))
         return
 
     return tlist
@@ -100,7 +145,7 @@ def nn(
     flor, conjunto, k=1
 ):  # variavel k apenas para manter interface igual a função knn
     menorDistancia = None
-    florVizinha = None
+    florVizinha = flor
 
     for f in conjunto:
         dt = distance(flor[:-1], f[:-1])
@@ -235,10 +280,11 @@ def medir_desempenho(n):
 
 def main():
     global flores
-    flores = get_list()
-    if flores == None:
+    ls = get_list()
+    if ls == None:
         return
 
+    flores = ls
     if NUMERO_TESTES > 1:
         medir_desempenho(NUMERO_TESTES)
     else:
